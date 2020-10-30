@@ -28,6 +28,10 @@ def decode_segmap(label_mask, dataset, plot = False):
 	elif dataset == 'cityscapes':
 		n_classes = 19
 		label_colours = get_cityscapes_labels()
+	elif dataset == 'flood':
+		#FIXME meaningless parameters
+		n_classes = 2
+		label_colours = get_flood_labels()
 	else:
 		raise NotImplementedError
 
@@ -35,6 +39,7 @@ def decode_segmap(label_mask, dataset, plot = False):
 	g = label_mask.copy()
 	b = label_mask.copy()
 	for ll in range(0, n_classes):
+		#FIXME convert from RGB to TIFF
 		r[label_mask == ll] = label_colours[ll, 0]
 		g[label_mask == ll] = label_colours[ll, 1]
 		b[label_mask == ll] = label_colours[ll, 2]
@@ -100,3 +105,6 @@ def get_pascal_labels():
 	                   [64, 0, 128], [192, 0, 128], [64, 128, 128], [192, 128, 128],
 	                   [0, 64, 0], [128, 64, 0], [0, 192, 0], [128, 192, 0],
 	                   [0, 64, 128]])
+def get_flood_labels():
+	#FIXME meaningless
+	return np.asarray([[0, 0], [128, 0]])

@@ -1,6 +1,8 @@
 import math
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
+import torchvision
+
 from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 
 
@@ -60,7 +62,7 @@ class ResNet(nn.Module):
 			raise NotImplementedError
 
 		# Modules
-		self.conv1 = nn.Conv2d(3, 64, kernel_size = 7, stride = 2, padding = 3,
+		self.conv1 = nn.Conv2d(2, 64, kernel_size = 7, stride = 2, padding = 3,
 		                       bias = False)
 		self.bn1 = BatchNorm(64)
 		self.relu = nn.ReLU(inplace = True)
@@ -142,10 +144,16 @@ class ResNet(nn.Module):
 				m.bias.data.zero_()
 
 	def _load_pretrained_model(self):
+		# FIXME only support 2 channels now
 		pretrain_dict = model_zoo.load_url('https://download.pytorch.org/models/resnet101-5d3b4d8f.pth')
+		model = torchvision.models.resnet101(pretrained = True)
+		model.conv1 = nn.Conv2d(2, 64, kernel_size = 7, stride = 2, padding = 3, bias = False)
 		model_dict = {}
+		model_dict['conv1.weight'] = model.conv1.weight
 		state_dict = self.state_dict()
 		for k, v in pretrain_dict.items():
+			if k == 'conv1.weight':
+				continue
 			if k in state_dict:
 				model_dict[k] = v
 		state_dict.update(model_dict)
@@ -165,7 +173,7 @@ if __name__ == "__main__":
 	import torch
 
 	model = ResNet101(BatchNorm = nn.BatchNorm2d, pretrained = True, output_stride = 8)
-	input = torch.rand(1, 3, 512, 512)
+	input = torch.rand(1, 2, 512, 512)
 	output, low_level_feat = model(input)
 	print(output.size())
 	print(low_level_feat.size())

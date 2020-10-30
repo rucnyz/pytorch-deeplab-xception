@@ -97,7 +97,7 @@ class Trainer(object):
 		tbar = tqdm(self.train_loader)
 		num_img_tr = len(self.train_loader)
 		for i, sample in enumerate(tbar):
-			image, target = sample['image'], sample['label']
+			image, target = sample[0], sample[1]  # image,label
 			if self.args.cuda:
 				image, target = image.cuda(), target.cuda()
 			self.scheduler(self.optimizer, i, epoch, self.best_pred)
@@ -111,9 +111,9 @@ class Trainer(object):
 			self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
 			# Show 10 * 3 inference results each epoch
-			if i % (num_img_tr // 10) == 0:
-				global_step = i + num_img_tr * epoch
-				self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
+			# if i % (num_img_tr // 10) == 0:
+			# 	global_step = i + num_img_tr * epoch
+			# 	self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
 
 		self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
 		print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
@@ -135,7 +135,7 @@ class Trainer(object):
 		tbar = tqdm(self.val_loader, desc = '\r')
 		test_loss = 0.0
 		for i, sample in enumerate(tbar):
-			image, target = sample['image'], sample['label']
+			image, target = sample[0], sample[1]#image,label
 			if self.args.cuda:
 				image, target = image.cuda(), target.cuda()
 			with torch.no_grad():
@@ -170,7 +170,7 @@ class Trainer(object):
 			self.best_pred = new_pred
 			self.saver.save_checkpoint({
 				'epoch': epoch + 1,
-				'state_dict': self.model.module.state_dict(),
+				'state_dict': self.model.state_dict(),
 				'optimizer': self.optimizer.state_dict(),
 				'best_pred': self.best_pred,
 			}, is_best)
@@ -184,7 +184,7 @@ def main():
 	parser.add_argument('--out-stride', type = int, default = 16,
 	                    help = 'network output stride (default: 8)')
 	parser.add_argument('--dataset', type = str, default = 'pascal',
-	                    choices = ['pascal', 'coco', 'cityscapes'],
+	                    choices = ['pascal', 'coco', 'cityscapes', 'flood'],
 	                    help = 'dataset name (default: pascal)')
 	parser.add_argument('--use-sbd', action = 'store_true', default = True,
 	                    help = 'whether to use SBD dataset (default: True)')
@@ -268,6 +268,7 @@ def main():
 			'coco': 30,
 			'cityscapes': 200,
 			'pascal': 50,
+			'flood': 100
 		}
 		args.epochs = epoches[args.dataset.lower()]
 
@@ -282,6 +283,7 @@ def main():
 			'coco': 0.1,
 			'cityscapes': 0.01,
 			'pascal': 0.007,
+			'flood': 5e-4
 		}
 		args.lr = lrs[args.dataset.lower()] / (4 * len(args.gpu_ids)) * args.batch_size
 
